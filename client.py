@@ -90,6 +90,9 @@ async def main():
             
             print("\nGetting all items:")
             await fetch_and_process_resource(session, "inventory://all/")
+            
+            print("\nGetting all warehouses:")
+            await fetch_and_process_resource(session, "inventory://warehouses/")
 
 if __name__ == "__main__":
     asyncio.run(main())

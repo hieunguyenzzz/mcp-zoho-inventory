@@ -50,6 +50,12 @@ def create_server():
                 name="item-by-sku",
                 description="Get inventory details for a specific item by SKU",
                 mimeType="application/json",
+            ),
+            types.Resource(
+                uri=AnyUrl("inventory://warehouses"),
+                name="all-warehouses",
+                description="Get all warehouses",
+                mimeType="application/json",
             )
         ]
     
@@ -80,6 +86,9 @@ def create_server():
         # Handle all items resource
         elif str(uri) == "inventory://all/" or str(uri) == "inventory://all":
             return get_all_stock()
+        # Handle all warehouses resource
+        elif str(uri) == "inventory://warehouses/" or str(uri) == "inventory://warehouses":
+            return get_all_warehouses()
         else:
             # For any other unsupported resource, return a proper error message
             # instead of raising a ValueError which causes the client to crash
@@ -88,7 +97,8 @@ def create_server():
                 "valid_resources": [
                     "inventory://stock/{item_name} - Get inventory details for a specific item",
                     "inventory://sku/{sku_code} - Get inventory details for a specific item by SKU",
-                    "inventory://all/ - Get all inventory items"
+                    "inventory://all/ - Get all inventory items",
+                    "inventory://warehouses/ - Get all warehouses"
                 ]
             }, indent=2)
     
@@ -232,6 +242,25 @@ def get_all_stock() -> str:
         return json.dumps({"error": str(e)})
 
 
+def get_all_warehouses() -> str:
+    """
+    Get all warehouses
+    
+    Returns:
+        JSON string with all warehouses
+    """
+    client = get_client()
+    if not client:
+        return json.dumps({"error": "Zoho Inventory client not initialized. Check environment variables."})
+    
+    try:
+        warehouses = client.get_all_warehouses()
+        return json.dumps(warehouses, indent=2)
+    except Exception as e:
+        logger.error(f"Error getting all warehouses: {str(e)}")
+        return json.dumps({"error": str(e)}, indent=2)
+
+
 def update_stock(item_name: str, quantity: int) -> str:
     """
     Update the stock quantity for an item
@@ -332,6 +361,10 @@ def create_app():
         # URL decode the SKU code
         sku_code = urllib.parse.unquote(sku_code)
         return get_stock_by_sku(sku_code)
+    
+    @mcp.resource("inventory://warehouses")
+    def fastmcp_get_all_warehouses() -> str:
+        return get_all_warehouses()
     
     @mcp.tool()
     def fastmcp_update_stock(item_name: str, quantity: int) -> str:

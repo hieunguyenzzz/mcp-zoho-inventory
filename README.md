@@ -6,6 +6,7 @@ A Model Context Protocol (MCP) server for interacting with Zoho Inventory.
 
 - Get inventory stock by item name
 - Get all inventory items
+- Get all warehouses
 - Update stock quantities
 - Automatic token refresh when access tokens expire
 - Support for SKUs and item names with spaces
@@ -58,6 +59,9 @@ uv run python client.py read-resource sku SF-1108
 
 # Query for items with spaces in their SKU
 uv run python client.py read-resource sku "LED Strip - XL Booth"
+
+# Get all warehouses
+uv run python client.py read-resource warehouses
 ```
 
 ### Resources
@@ -67,6 +71,7 @@ Available resources:
 - `inventory://stock/{item_name}` - Get stock details for a specific item by name
 - `inventory://sku/{sku}` - Get stock details for a specific item by SKU
 - `inventory://all` - Get all inventory items
+- `inventory://warehouses` - Get all warehouses
 
 ### Tools
 
@@ -96,4 +101,10 @@ What's the current stock for item with SKU "SF-1108"?
 
 ```
 Show me all items in the inventory.
+```
+
+### List all warehouses
+
+```
+Show me all warehouses.
 ```

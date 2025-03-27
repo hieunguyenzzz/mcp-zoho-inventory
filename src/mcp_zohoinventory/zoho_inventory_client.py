@@ -335,6 +335,30 @@ class ZohoInventoryClient:
         
         return data.get("items", [])
     
+    def get_all_warehouses(self) -> List[Dict[str, Any]]:
+        """
+        Get all warehouses
+        
+        Returns:
+            List of all warehouses
+        """
+        # Log the operation
+        logger.info("Getting all warehouses")
+        
+        response = self._make_api_request("GET", "warehouses")
+        data = response.json()
+        
+        # Log response preview
+        preview = {k: v for k, v in data.items() if k != 'warehouses'}
+        if 'warehouses' in data:
+            preview['warehouses_count'] = len(data['warehouses'])
+            if data['warehouses']:
+                preview['first_warehouse_preview'] = data['warehouses'][0]['warehouse_name'] if 'warehouse_name' in data['warehouses'][0] else '(no name)'
+        
+        logger.info(f"API response summary for get_all_warehouses: {preview}")
+        
+        return data.get("warehouses", [])
+    
     def update_item_stock(self, name: str, stock_on_hand: int) -> Dict[str, Any]:
         """
         Update the stock level for an item by name
