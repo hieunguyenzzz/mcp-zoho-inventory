@@ -1,6 +1,7 @@
 import asyncio
 import json
 import sys
+import urllib.parse
 from typing import Any, Dict, Optional
 from mcp.types import AnyUrl, ReadResourceResult
 from mcp.client.session import ClientSession
@@ -57,9 +58,13 @@ async def main():
                     await session.initialize()
                     
                     if resource_type == "stock":
-                        await fetch_and_process_resource(session, f"inventory://stock/{resource_name}")
+                        # URL encode the item name to handle spaces and special chars
+                        encoded_name = urllib.parse.quote(resource_name)
+                        await fetch_and_process_resource(session, f"inventory://stock/{encoded_name}")
                     elif resource_type == "sku":
-                        await fetch_and_process_resource(session, f"inventory://sku/{resource_name}")
+                        # URL encode the SKU to handle spaces and special chars
+                        encoded_sku = urllib.parse.quote(resource_name)
+                        await fetch_and_process_resource(session, f"inventory://sku/{encoded_sku}")
                     else:
                         print(f"Unknown resource type: {resource_type}")
             return

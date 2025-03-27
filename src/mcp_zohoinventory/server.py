@@ -6,6 +6,7 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from pydantic import AnyUrl
 from mcp_zohoinventory.zoho_inventory_client import ZohoInventoryClient
+import urllib.parse
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -62,6 +63,8 @@ def create_server():
             item_name = str(uri).replace("inventory://stock/", "")
             if not item_name:
                 return json.dumps({"error": "Item name cannot be empty"})
+            # URL decode the item name
+            item_name = urllib.parse.unquote(item_name)
             # Get item stock by name and explicitly return the result
             result = get_stock_by_name(item_name)
             return result
@@ -70,6 +73,8 @@ def create_server():
             sku_code = str(uri).replace("inventory://sku/", "")
             if not sku_code:
                 return json.dumps({"error": "SKU code cannot be empty"})
+            # URL decode the SKU code
+            sku_code = urllib.parse.unquote(sku_code)
             result = get_stock_by_sku(sku_code)
             return result
         # Handle all items resource
@@ -314,6 +319,8 @@ def create_app():
     
     @mcp.resource("inventory://stock/{item_name}")
     def fastmcp_get_stock_by_name(item_name: str) -> str:
+        # URL decode the item name
+        item_name = urllib.parse.unquote(item_name)
         return get_stock_by_name(item_name)
     
     @mcp.resource("inventory://all") 
@@ -322,6 +329,8 @@ def create_app():
     
     @mcp.resource("inventory://sku/{sku_code}")
     def fastmcp_get_stock_by_sku(sku_code: str) -> str:
+        # URL decode the SKU code
+        sku_code = urllib.parse.unquote(sku_code)
         return get_stock_by_sku(sku_code)
     
     @mcp.tool()
