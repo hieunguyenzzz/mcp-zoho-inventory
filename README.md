@@ -42,6 +42,11 @@ This application includes automatic token refresh capabilities:
 
 ## Usage
 
+### Using development inspector 
+
+```
+uv run mcp dev src/mcp_zohoinventory/server.py
+```
 
 ### Using the Test Client:
 

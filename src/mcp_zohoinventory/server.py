@@ -1,379 +1,96 @@
-import logging
-import json
-import anyio
-import click
-import mcp.types as types
-from mcp.server.lowlevel import Server
-from pydantic import AnyUrl
-from mcp_zohoinventory.zoho_inventory_client import ZohoInventoryClient
 import urllib.parse
+import logging
+from mcp.server.fastmcp import FastMCP
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize the Zoho Inventory client lazily
-zoho_client = None
+# Create an MCP server
+mcp = FastMCP("mcp-zoho-inventory")
 
-def get_client():
-    """Get or initialize the ZohoInventoryClient"""
-    global zoho_client
-    if zoho_client is None:
-        try:
-            zoho_client = ZohoInventoryClient()
-        except ValueError as e:
-            logger.error(f"Failed to initialize ZohoInventoryClient: {str(e)}")
-            return None
-    return zoho_client
-
-def create_server():
-    """Create and configure the MCP server"""
-    app = Server("mcp-zoho-inventory")
-    
-    @app.list_resources()
-    async def list_resources() -> list[types.Resource]:
-        return [
-            types.Resource(
-                uri=AnyUrl("inventory://stock/{item_name}"),
-                name="item-stock",
-                description="Get inventory details for a specific item by name",
-                mimeType="application/json",
-            ),
-            types.Resource(
-                uri=AnyUrl("inventory://all"),
-                name="all-items",
-                description="Get all inventory items",
-                mimeType="application/json",
-            ),
-            types.Resource(
-                uri=AnyUrl("inventory://sku/{sku_code}"),
-                name="item-by-sku",
-                description="Get inventory details for a specific item by SKU",
-                mimeType="application/json",
-            ),
-            types.Resource(
-                uri=AnyUrl("inventory://warehouses"),
-                name="all-warehouses",
-                description="Get all warehouses",
-                mimeType="application/json",
-            )
-        ]
-    
-    @app.read_resource()
-    async def read_resource(uri: AnyUrl) -> str | bytes:
-        path = uri.path
-        logger.info(f"Resource path: '{path}', URI: '{uri}'")
-        
-        # Handle stock resource - format: inventory://stock/{item_name}
-        if str(uri).startswith("inventory://stock/"):
-            item_name = str(uri).replace("inventory://stock/", "")
-            if not item_name:
-                return json.dumps({"error": "Item name cannot be empty"})
-            # URL decode the item name
-            item_name = urllib.parse.unquote(item_name)
-            # Get item stock by name and explicitly return the result
-            result = get_stock_by_name(item_name)
-            return result
-        # Handle SKU resource - format: inventory://sku/{sku_code}
-        elif str(uri).startswith("inventory://sku/"):
-            sku_code = str(uri).replace("inventory://sku/", "")
-            if not sku_code:
-                return json.dumps({"error": "SKU code cannot be empty"})
-            # URL decode the SKU code
-            sku_code = urllib.parse.unquote(sku_code)
-            result = get_stock_by_sku(sku_code)
-            return result
-        # Handle all items resource
-        elif str(uri) == "inventory://all/" or str(uri) == "inventory://all":
-            return get_all_stock()
-        # Handle all warehouses resource
-        elif str(uri) == "inventory://warehouses/" or str(uri) == "inventory://warehouses":
-            return get_all_warehouses()
-        else:
-            # For any other unsupported resource, return a proper error message
-            # instead of raising a ValueError which causes the client to crash
-            return json.dumps({
-                "error": f"Unknown or invalid resource: {uri}",
-                "valid_resources": [
-                    "inventory://stock/{item_name} - Get inventory details for a specific item",
-                    "inventory://sku/{sku_code} - Get inventory details for a specific item by SKU",
-                    "inventory://all/ - Get all inventory items",
-                    "inventory://warehouses/ - Get all warehouses"
-                ]
-            }, indent=2)
-    
-    @app.list_tools()
-    async def list_tools() -> list[types.Tool]:
-        return [
-            types.Tool(
-                name="update_stock",
-                description="Update the stock quantity for an item",
-                inputSchema={
-                    "type": "object",
-                    "required": ["item_name", "quantity"],
-                    "properties": {
-                        "item_name": {
-                            "type": "string",
-                            "description": "Name of the inventory item",
-                        },
-                        "quantity": {
-                            "type": "integer",
-                            "description": "New stock quantity",
-                        },
-                    },
-                },
-            )
-        ]
-    
-    @app.call_tool()
-    async def call_tool(
-        name: str, arguments: dict
-    ) -> str:
-        if name != "update_stock":
-            raise ValueError(f"Unknown tool: {name}")
-        
-        if "item_name" not in arguments:
-            raise ValueError("Missing required argument 'item_name'")
-        if "quantity" not in arguments:
-            raise ValueError("Missing required argument 'quantity'")
-        
-        return update_stock(arguments["item_name"], arguments["quantity"])
-    
-    return app
-
+@mcp.resource("inventory://stock/{item_name}")
 def get_stock_by_name(item_name: str) -> str:
-    """
-    Get inventory details for a specific item by name
-    
-    Args:
-        item_name: Name of the inventory item
-        
-    Returns:
-        JSON string with item details or error message
-    """
-    client = get_client()
-    if not client:
-        return json.dumps({"error": "Zoho Inventory client not initialized. Check environment variables."})
+    """Get inventory details for a specific item by name"""
+    from mcp_zohoinventory.zoho_inventory_client import ZohoInventoryClient
     
     try:
+        client = ZohoInventoryClient()
+        # URL decode the item name
+        item_name = urllib.parse.unquote(item_name)
         item = client.get_item_by_name(item_name)
+        
         if not item:
-            # Return a proper error message when the item doesn't exist
-            return json.dumps({
-                "error": f"Item not found: {item_name}",
-                "suggestion": "Check the item name or use the 'inventory://all/' resource to see all available items"
-            }, indent=2)
-        return json.dumps(item, indent=2)
+            return {"error": f"Item not found: {item_name}"}
+        return item
     except Exception as e:
         logger.error(f"Error getting item {item_name}: {str(e)}")
-        return json.dumps({"error": str(e)}, indent=2)
+        return {"error": str(e)}
 
-
-def get_stock_by_sku(sku_code: str) -> str:
-    """
-    Get inventory details for a specific item by SKU
-    
-    Args:
-        sku_code: SKU of the inventory item
-        
-    Returns:
-        JSON string with item details or error message
-    """
-    client = get_client()
-    if not client:
-        return json.dumps({"error": "Zoho Inventory client not initialized. Check environment variables."})
+@mcp.resource("inventory://all") 
+def get_all_stock() -> str:
+    """Get all inventory items"""
+    from mcp_zohoinventory.zoho_inventory_client import ZohoInventoryClient
     
     try:
+        client = ZohoInventoryClient()
+        items = client.get_all_items()
+        return items
+    except Exception as e:
+        logger.error(f"Error getting all items: {str(e)}")
+        return {"error": str(e)}
+
+@mcp.resource("inventory://sku/{sku_code}")
+def get_stock_by_sku(sku_code: str) -> str:
+    """Get inventory details for a specific item by SKU"""
+    from mcp_zohoinventory.zoho_inventory_client import ZohoInventoryClient
+    
+    try:
+        client = ZohoInventoryClient()
+        # URL decode the SKU code
+        sku_code = urllib.parse.unquote(sku_code)
         item = client.get_item_by_sku(sku_code)
+        
         if not item:
-            # Return a proper error message when the item doesn't exist
-            return json.dumps({
-                "error": f"Item not found with SKU: {sku_code}",
-                "suggestion": "Check the SKU code or use the 'inventory://all/' resource to see all available items"
-            }, indent=2)
-        return json.dumps(item, indent=2)
+            return {"error": f"Item not found with SKU: {sku_code}"}
+        return item
     except Exception as e:
         logger.error(f"Error getting item with SKU {sku_code}: {str(e)}")
-        return json.dumps({"error": str(e)}, indent=2)
+        return {"error": str(e)}
 
-
-def get_all_stock() -> str:
-    """
-    Get all inventory items
-    
-    Returns:
-        JSON string with all items
-    """
-    client = get_client()
-    if not client:
-        return json.dumps({"error": "Zoho Inventory client not initialized. Check environment variables."})
-    
-    try:
-        items = client.get_all_items()
-        return json.dumps(items, indent=2)
-    except ValueError as e:
-        # If authentication failed, return a demo response
-        if "Authentication failed" in str(e):
-            logger.warning(f"Authentication error, returning demo data: {str(e)}")
-            return json.dumps({
-                "items": [
-                    {
-                        "item_id": "demo-item-1",
-                        "name": "Demo Product 1",
-                        "sku": "DP-001",
-                        "description": "A demo product for testing",
-                        "stock_on_hand": 42,
-                        "unit": "pcs"
-                    },
-                    {
-                        "item_id": "demo-item-2",
-                        "name": "Demo Product 2",
-                        "sku": "DP-002",
-                        "description": "Another demo product for testing",
-                        "stock_on_hand": 100,
-                        "unit": "pcs"
-                    }
-                ]
-            }, indent=2)
-        logger.error(f"Error getting all items: {str(e)}")
-        return json.dumps({"error": str(e)})
-    except Exception as e:
-        logger.error(f"Error getting all items: {str(e)}")
-        return json.dumps({"error": str(e)})
-
-
+@mcp.resource("inventory://warehouses")
 def get_all_warehouses() -> str:
-    """
-    Get all warehouses
-    
-    Returns:
-        JSON string with all warehouses
-    """
-    client = get_client()
-    if not client:
-        return json.dumps({"error": "Zoho Inventory client not initialized. Check environment variables."})
+    """Get all warehouses"""
+    from mcp_zohoinventory.zoho_inventory_client import ZohoInventoryClient
     
     try:
+        client = ZohoInventoryClient()
         warehouses = client.get_all_warehouses()
-        return json.dumps(warehouses, indent=2)
+        return warehouses
     except Exception as e:
         logger.error(f"Error getting all warehouses: {str(e)}")
-        return json.dumps({"error": str(e)}, indent=2)
+        return {"error": str(e)}
 
-
+@mcp.tool()
 def update_stock(item_name: str, quantity: int) -> str:
-    """
-    Update the stock quantity for an item
-    
-    Args:
-        item_name: Name of the inventory item
-        quantity: New stock quantity
-        
-    Returns:
-        JSON string with update result
-    """
-    client = get_client()
-    if not client:
-        return json.dumps({"error": "Zoho Inventory client not initialized. Check environment variables."})
+    """Update the stock quantity for an item"""
+    from mcp_zohoinventory.zoho_inventory_client import ZohoInventoryClient
     
     try:
+        client = ZohoInventoryClient()
         updated_item = client.update_item_stock(item_name, quantity)
-        return json.dumps({
+        return {
             "success": True,
             "message": f"Updated stock for {item_name} to {quantity}",
             "item": updated_item
-        }, indent=2)
+        }
     except Exception as e:
         logger.error(f"Error updating item {item_name}: {str(e)}")
-        return json.dumps({
+        return {
             "success": False,
             "error": str(e)
-        })
-
-@click.command()
-@click.option("--port", default=8000, help="Port to listen on for SSE")
-@click.option(
-    "--transport",
-    type=click.Choice(["stdio", "sse"]),
-    default="stdio",
-    help="Transport type",
-)
-def main(port: int, transport: str) -> int:
-    """Main entry point for the Zoho Inventory MCP server"""
-    app = create_server()
-
-    if transport == "sse":
-        from mcp.server.sse import SseServerTransport
-        from starlette.applications import Starlette
-        from starlette.routing import Mount, Route
-
-        sse = SseServerTransport("/messages/")
-
-        async def handle_sse(request):
-            async with sse.connect_sse(
-                request.scope, request.receive, request._send
-            ) as streams:
-                await app.run(
-                    streams[0], streams[1], app.create_initialization_options()
-                )
-
-        starlette_app = Starlette(
-            debug=True,
-            routes=[
-                Route("/sse", endpoint=handle_sse),
-                Mount("/messages/", app=sse.handle_post_message),
-            ],
-        )
-
-        import uvicorn
-        logger.info(f"Starting SSE server on port {port}")
-        uvicorn.run(starlette_app, host="0.0.0.0", port=port)
-    else:
-        from mcp.server.stdio import stdio_server
-        logger.info("Starting stdio server")
-        
-        async def arun():
-            async with stdio_server() as streams:
-                await app.run(
-                    streams[0], streams[1], app.create_initialization_options()
-                )
-
-        anyio.run(arun)
-
-    return 0
+        }
 
 def create_app():
     """Create a FastMCP app"""
-    import mcp
-    
-    @mcp.resource("inventory://stock/{item_name}")
-    def fastmcp_get_stock_by_name(item_name: str) -> str:
-        # URL decode the item name
-        item_name = urllib.parse.unquote(item_name)
-        return get_stock_by_name(item_name)
-    
-    @mcp.resource("inventory://all") 
-    def fastmcp_get_all_stock() -> str:
-        return get_all_stock()
-    
-    @mcp.resource("inventory://sku/{sku_code}")
-    def fastmcp_get_stock_by_sku(sku_code: str) -> str:
-        # URL decode the SKU code
-        sku_code = urllib.parse.unquote(sku_code)
-        return get_stock_by_sku(sku_code)
-    
-    @mcp.resource("inventory://warehouses")
-    def fastmcp_get_all_warehouses() -> str:
-        return get_all_warehouses()
-    
-    @mcp.tool()
-    def fastmcp_update_stock(item_name: str, quantity: int) -> str:
-        return update_stock(item_name, quantity)
-    
     return mcp
-
-# Create a server instance for the MCP CLI to discover
-server = create_server()
-
-if __name__ == "__main__":
-    main()
