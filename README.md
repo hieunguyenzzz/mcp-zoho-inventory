@@ -43,14 +43,17 @@ This application includes automatic token refresh capabilities:
 
 ### Using the Test Client:
 
-The included `client.py` script can be used to test the API:
+The included `client.py` script can be used to test the API. You can run it using `uv` for proper environment management:
 
 ```bash
 # Run the client without arguments to see all available resources
-python client.py
+uv run python client.py
+
+# Query for a specific item by stock name
+uv run python client.py read-resource stock "Item Name"
 
 # Query for a specific item by SKU
-python client.py read-resource stock SF-1108
+uv run python client.py read-resource sku SF-1108
 ```
 
 ### Resources

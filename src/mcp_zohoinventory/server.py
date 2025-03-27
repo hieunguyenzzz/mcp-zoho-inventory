@@ -4,7 +4,7 @@ import anyio
 import click
 import mcp.types as types
 from mcp.server.lowlevel import Server
-from pydantic import FileUrl
+from pydantic import AnyUrl
 from mcp_zohoinventory.zoho_inventory_client import ZohoInventoryClient
 
 # Set up logging
@@ -33,19 +33,19 @@ def create_server():
     async def list_resources() -> list[types.Resource]:
         return [
             types.Resource(
-                uri=FileUrl("file://stock/{item_name}"),
+                uri=AnyUrl("inventory://stock/{item_name}"),
                 name="item-stock",
                 description="Get inventory details for a specific item by name",
                 mimeType="application/json",
             ),
             types.Resource(
-                uri=FileUrl("file://all"),
+                uri=AnyUrl("inventory://all"),
                 name="all-items",
                 description="Get all inventory items",
                 mimeType="application/json",
             ),
             types.Resource(
-                uri=FileUrl("file://sku/{sku_code}"),
+                uri=AnyUrl("inventory://sku/{sku_code}"),
                 name="item-by-sku",
                 description="Get inventory details for a specific item by SKU",
                 mimeType="application/json",
@@ -53,27 +53,27 @@ def create_server():
         ]
     
     @app.read_resource()
-    async def read_resource(uri: FileUrl) -> str | bytes:
+    async def read_resource(uri: AnyUrl) -> str | bytes:
         path = uri.path
         logger.info(f"Resource path: '{path}', URI: '{uri}'")
         
-        # Handle stock resource - format: file://stock/{item_name}
-        if str(uri).startswith("file://stock/"):
-            item_name = str(uri).replace("file://stock/", "")
+        # Handle stock resource - format: inventory://stock/{item_name}
+        if str(uri).startswith("inventory://stock/"):
+            item_name = str(uri).replace("inventory://stock/", "")
             if not item_name:
                 return json.dumps({"error": "Item name cannot be empty"})
             # Get item stock by name and explicitly return the result
             result = get_stock_by_name(item_name)
             return result
-        # Handle SKU resource - format: file://sku/{sku_code}
-        elif str(uri).startswith("file://sku/"):
-            sku_code = str(uri).replace("file://sku/", "")
+        # Handle SKU resource - format: inventory://sku/{sku_code}
+        elif str(uri).startswith("inventory://sku/"):
+            sku_code = str(uri).replace("inventory://sku/", "")
             if not sku_code:
                 return json.dumps({"error": "SKU code cannot be empty"})
             result = get_stock_by_sku(sku_code)
             return result
         # Handle all items resource
-        elif str(uri) == "file://all/" or str(uri) == "file://all":
+        elif str(uri) == "inventory://all/" or str(uri) == "inventory://all":
             return get_all_stock()
         else:
             # For any other unsupported resource, return a proper error message
@@ -81,9 +81,9 @@ def create_server():
             return json.dumps({
                 "error": f"Unknown or invalid resource: {uri}",
                 "valid_resources": [
-                    "file://stock/{item_name} - Get inventory details for a specific item",
-                    "file://sku/{sku_code} - Get inventory details for a specific item by SKU",
-                    "file://all/ - Get all inventory items"
+                    "inventory://stock/{item_name} - Get inventory details for a specific item",
+                    "inventory://sku/{sku_code} - Get inventory details for a specific item by SKU",
+                    "inventory://all/ - Get all inventory items"
                 ]
             }, indent=2)
     
@@ -146,7 +146,7 @@ def get_stock_by_name(item_name: str) -> str:
             # Return a proper error message when the item doesn't exist
             return json.dumps({
                 "error": f"Item not found: {item_name}",
-                "suggestion": "Check the item name or use the 'file://all/' resource to see all available items"
+                "suggestion": "Check the item name or use the 'inventory://all/' resource to see all available items"
             }, indent=2)
         return json.dumps(item, indent=2)
     except Exception as e:
@@ -174,7 +174,7 @@ def get_stock_by_sku(sku_code: str) -> str:
             # Return a proper error message when the item doesn't exist
             return json.dumps({
                 "error": f"Item not found with SKU: {sku_code}",
-                "suggestion": "Check the SKU code or use the 'file://all/' resource to see all available items"
+                "suggestion": "Check the SKU code or use the 'inventory://all/' resource to see all available items"
             }, indent=2)
         return json.dumps(item, indent=2)
     except Exception as e:
@@ -312,15 +312,15 @@ def create_app():
     """Create a FastMCP app"""
     import mcp
     
-    @mcp.resource("file://stock/{item_name}")
+    @mcp.resource("inventory://stock/{item_name}")
     def fastmcp_get_stock_by_name(item_name: str) -> str:
         return get_stock_by_name(item_name)
     
-    @mcp.resource("file://all") 
+    @mcp.resource("inventory://all") 
     def fastmcp_get_all_stock() -> str:
         return get_all_stock()
     
-    @mcp.resource("file://sku/{sku_code}")
+    @mcp.resource("inventory://sku/{sku_code}")
     def fastmcp_get_stock_by_sku(sku_code: str) -> str:
         return get_stock_by_sku(sku_code)
     
