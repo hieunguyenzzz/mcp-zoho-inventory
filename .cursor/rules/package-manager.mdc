@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+using uv to manage your Python projects
+
+uv pip install -e .
+
+and this command to run the app 
+
+uv run mcp-zoho
