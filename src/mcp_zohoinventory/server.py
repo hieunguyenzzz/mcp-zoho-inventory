@@ -94,3 +94,18 @@ def update_stock(item_name: str, quantity: int) -> str:
 def create_app():
     """Create a FastMCP app"""
     return mcp
+
+def main():
+    """Entry point for the MCP server"""
+    try:
+        logger.info("Starting MCP Zoho Inventory server")
+        # Use the direct run method without asyncio
+        mcp.run()
+    except KeyboardInterrupt:
+        logger.info("Server shutdown requested")
+    except Exception as e:
+        logger.error(f"Error running server: {str(e)}")
+        raise
+
+if __name__ == "__main__":
+    main()
