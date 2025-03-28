@@ -1,6 +1,7 @@
 import urllib.parse
 import logging
 from mcp.server.fastmcp import FastMCP
+from typing import Optional
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -72,18 +73,68 @@ def get_all_warehouses() -> str:
         return {"error": str(e)}
 
 @mcp.tool()
-def update_stock_by_sku(sku: str, quantity: int, reason: str = "Stock update via API") -> str:
-    """Update the stock quantity for an item by SKU"""
+def update_stock_by_sku(sku: str, quantity: int, reason: str = "Stock update via API", warehouse_name: Optional[str] = None) -> str:
+    """
+    Update the stock quantity for an item by SKU
+    
+    Args:
+        sku: SKU of the item to update
+        quantity: New quantity to set (not an adjustment)
+        reason: Reason for the stock update
+        warehouse_name: Optional warehouse name for location-specific update
+    """
     from mcp_zohoinventory.zoho_inventory_client import ZohoInventoryClient
     
     try:
         client = ZohoInventoryClient()
-        adjustment = client.override_stock_by_sku(sku, quantity, reason)
-        return {
-            "success": True,
-            "message": f"Updated stock for SKU {sku} to {quantity}",
-            "adjustment": adjustment
-        }
+        logger.info(f"Updating stock for SKU: {sku} to quantity: {quantity} with warehouse_name: {warehouse_name}")
+        
+        # Get current item details to show in response
+        current_item = client.get_item_by_sku(sku)
+        if not current_item:
+            return {
+                "success": False,
+                "error": f"Item not found with SKU: {sku}"
+            }
+            
+        current_stock = current_item.get("available_stock", 0)
+        logger.info(f"Current stock for SKU {sku}: {current_stock}")
+        
+        # Attempt to update stock
+        try:
+            adjustment = client.override_stock_by_sku(sku, quantity, reason, warehouse_name)
+            
+            location_msg = f" in warehouse '{warehouse_name}'" if warehouse_name else ""
+            
+            # Check if this was a no-adjustment due to same quantities
+            if isinstance(adjustment, dict) and "warning" in adjustment:
+                logger.info(f"No adjustment needed: {adjustment}")
+                return {
+                    "success": True,
+                    "message": f"No change needed for SKU {sku}{location_msg}. Current stock already at {quantity}.",
+                    "details": adjustment
+                }
+                
+            return {
+                "success": True,
+                "message": f"Updated stock for SKU {sku} to {quantity}{location_msg}",
+                "adjustment": adjustment
+            }
+            
+        except Exception as adjustment_error:
+            # Check for the specific error about zero adjustment
+            error_str = str(adjustment_error)
+            if "Adjustment quantity should not be zero" in error_str:
+                logger.info(f"Caught zero adjustment error, current stock already at target value")
+                return {
+                    "success": True,
+                    "message": f"Stock for SKU {sku} already at {quantity}{location_msg}. No adjustment needed.",
+                    "note": "Current stock already matches requested quantity."
+                }
+            else:
+                # Re-raise if it's not the zero adjustment error
+                raise
+                
     except Exception as e:
         logger.error(f"Error updating inventory for SKU {sku}: {str(e)}")
         return {

@@ -104,7 +104,27 @@ class ZohoInventoryClient:
         # Adjust the inventory
         return self._item_client.adjust_inventory_by_item_id(item_id, quantity, reason)
     
-    def override_stock_by_sku(self, sku: str, target_quantity: int, reason: str = "Stock override via API") -> Dict[str, Any]:
+    def get_location_id_by_warehouse_name(self, warehouse_name: str) -> str:
+        """
+        Get warehouse location ID from warehouse name
+        
+        Args:
+            warehouse_name: Name of the warehouse
+            
+        Returns:
+            Location ID of the warehouse
+        """
+        warehouse = self.get_warehouse_by_name(warehouse_name)
+        if not warehouse:
+            raise ValueError(f"Warehouse not found with name: {warehouse_name}")
+        
+        warehouse_id = warehouse.get("warehouse_id")
+        if not warehouse_id:
+            raise ValueError(f"Warehouse ID not found for name: {warehouse_name}")
+        
+        return warehouse_id
+    
+    def override_stock_by_sku(self, sku: str, target_quantity: int, reason: str = "Stock override via API", warehouse_name: Optional[str] = None) -> Dict[str, Any]:
         """
         Override inventory quantity for an item by SKU to an exact value
         
@@ -112,21 +132,47 @@ class ZohoInventoryClient:
             sku: SKU of the inventory item
             target_quantity: Exact quantity to set
             reason: Reason for the override
+            warehouse_name: Optional name of the warehouse for location-specific update
             
         Returns:
             Adjustment details or error message
         """
         # First get the item to find its ID
+        logger.info(f"Starting override_stock_by_sku for SKU: {sku}, target_quantity: {target_quantity}, warehouse_name: {warehouse_name}")
+        
         item = self.get_item_by_sku(sku)
         if not item:
+            logger.error(f"Item not found with SKU: {sku}")
             raise ValueError(f"Item not found with SKU: {sku}")
         
         item_id = item.get("item_id")
         if not item_id:
+            logger.error(f"Item ID not found for SKU: {sku}")
             raise ValueError(f"Item ID not found for SKU: {sku}")
+        
+        logger.info(f"Found item with ID: {item_id} for SKU: {sku}")
+        
+        # If warehouse name is provided, get the location ID
+        location_id = None
+        if warehouse_name:
+            logger.info(f"Attempting to get location_id for warehouse named: {warehouse_name}")
+            try:
+                warehouse = self.get_warehouse_by_name(warehouse_name)
+                logger.info(f"Warehouse found: {warehouse}")
+                
+                location_id = warehouse.get("warehouse_id")
+                if not location_id:
+                    logger.error(f"Warehouse found but warehouse_id is missing for name: {warehouse_name}")
+                    raise ValueError(f"Warehouse ID not found for name: {warehouse_name}")
+                    
+                logger.info(f"Successfully resolved warehouse_name '{warehouse_name}' to location_id '{location_id}'")
+            except Exception as e:
+                logger.error(f"Error getting location_id for warehouse {warehouse_name}: {str(e)}")
+                raise
             
         # Override the inventory
-        return self._item_client.override_item_stock_by_id(item_id, target_quantity, reason)
+        logger.info(f"Calling override_item_stock_by_id with item_id: {item_id}, target_quantity: {target_quantity}, location_id: {location_id}")
+        return self._item_client.override_item_stock_by_id(item_id, target_quantity, reason, location_id)
     
     # Warehouse-related methods
     

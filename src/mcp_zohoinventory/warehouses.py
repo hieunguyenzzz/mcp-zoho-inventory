@@ -71,8 +71,18 @@ class WarehouseClient(ZohoClient):
         # Get all warehouses and filter by name
         warehouses = self.list()
         
+        logger.info(f"Found {len(warehouses)} warehouses total, searching for name: '{name}'")
+        
+        # Log all warehouse names for debugging
+        warehouse_names = [w.get("warehouse_name", "(unnamed)") for w in warehouses]
+        logger.info(f"Available warehouse names: {warehouse_names}")
+        
         for warehouse in warehouses:
-            if warehouse.get("warehouse_name") == name:
+            warehouse_name = warehouse.get("warehouse_name", "(unnamed)")
+            logger.info(f"Comparing warehouse name '{warehouse_name}' against requested name '{name}'")
+            if warehouse_name == name:
+                logger.info(f"Found matching warehouse with ID: {warehouse.get('warehouse_id')}")
                 return warehouse
-                
+        
+        logger.warning(f"No warehouse found with name: '{name}'")
         return {} 

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from .client import ZohoClient
 
 # Set up logging
@@ -116,7 +116,7 @@ class ItemClient(ZohoClient):
         )
         return response.json().get("item", {})
         
-    def adjust_inventory_by_item_id(self, item_id: str, quantity: int, reason: str = "Stock update via API") -> Dict[str, Any]:
+    def adjust_inventory_by_item_id(self, item_id: str, quantity: int, reason: str = "Stock update via API", location_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Adjust inventory quantity for an item by ID using inventoryadjustments API
         
@@ -124,12 +124,13 @@ class ItemClient(ZohoClient):
             item_id: ID of the inventory item
             quantity: Quantity to adjust (positive or negative)
             reason: Reason for the adjustment
+            location_id: Optional ID of the warehouse location
             
         Returns:
             Adjustment details
         """
         # Log the operation
-        logger.info(f"Adjusting inventory for item ID: {item_id}, quantity: {quantity}")
+        logger.info(f"Adjusting inventory for item ID: {item_id}, quantity: {quantity}, location_id: {location_id}")
         
         from datetime import datetime
         
@@ -145,6 +146,10 @@ class ItemClient(ZohoClient):
             ]
         }
         
+        # Add location_id to the line item if provided
+        if location_id:
+            payload["line_items"][0]["warehouse_id"] = location_id
+        
         response = self.make_api_request(
             "POST",
             "inventoryadjustments",
@@ -156,30 +161,57 @@ class ItemClient(ZohoClient):
         
         return data.get("inventoryadjustment", {})
 
-    def get_item_stock_by_id(self, item_id: str) -> int:
+    def get_item_stock_by_id(self, item_id: str, location_id: Optional[str] = None) -> int:
         """
         Get current stock quantity for an item by ID
         
         Args:
             item_id: ID of the inventory item
+            location_id: Optional ID of the warehouse location
             
         Returns:
             Current stock quantity as integer
         """
-        logger.info(f"Getting stock quantity for item ID: {item_id}")
+        logger.info(f"Getting stock quantity for item ID: {item_id}, location_id: {location_id}")
         
-        response = self.make_api_request(
-            "GET",
-            f"items/{item_id}"
-        )
+        # Build the API endpoint
+        endpoint = f"items/{item_id}"
         
+        response = self.make_api_request("GET", endpoint)
         data = response.json()
-        logger.info(f"API response summary for get_item_stock_by_id: {data.get('code')}")
+        
+        # More detailed logging of API response
+        logger.info(f"API response code for get_item_stock_by_id: {data.get('code')}")
         
         item = data.get("item", {})
-        return int(item.get("available_stock", 0))
+        
+        # If location_id is provided, find stock for that specific warehouse
+        if location_id and "warehouses" in item:
+            warehouses = item.get("warehouses", [])
+            logger.info(f"Found {len(warehouses)} warehouses for item {item_id}")
+            
+            # Log all available warehouses for debugging
+            warehouse_ids = [w.get("warehouse_id") for w in warehouses]
+            logger.info(f"Available warehouse IDs: {warehouse_ids}")
+            
+            for warehouse in warehouses:
+                warehouse_id = warehouse.get("warehouse_id")
+                logger.info(f"Checking warehouse {warehouse_id} against requested location_id {location_id}")
+                if warehouse_id == location_id:
+                    available_stock = int(float(warehouse.get("warehouse_available_stock", 0)))
+                    logger.info(f"Found matching warehouse. Available stock: {available_stock}")
+                    return available_stock
+            
+            # If warehouse not found in details, return 0
+            logger.warning(f"Warehouse with ID {location_id} not found in warehouse details for item {item_id}")
+            return 0
+            
+        # Return overall available stock if no location specified or warehouse details not available
+        available_stock = int(float(item.get("available_stock", 0)))
+        logger.info(f"Using overall available stock: {available_stock}")
+        return available_stock
     
-    def override_item_stock_by_id(self, item_id: str, target_quantity: int, reason: str = "Stock override via API") -> Dict[str, Any]:
+    def override_item_stock_by_id(self, item_id: str, target_quantity: int, reason: str = "Stock override via API", location_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Override inventory quantity for an item by ID to an exact value
         
@@ -187,20 +219,36 @@ class ItemClient(ZohoClient):
             item_id: ID of the inventory item
             target_quantity: Exact quantity to set
             reason: Reason for the adjustment
+            location_id: Optional ID of the warehouse location
             
         Returns:
             Adjustment details
         """
         # Log the operation
-        logger.info(f"Overriding stock for item ID: {item_id} to quantity: {target_quantity}")
+        logger.info(f"Overriding stock for item ID: {item_id} to quantity: {target_quantity}, location_id: {location_id}")
         
         # Get current stock quantity
-        current_quantity = self.get_item_stock_by_id(item_id)
+        current_quantity = self.get_item_stock_by_id(item_id, location_id)
         logger.info(f"Current stock quantity for item ID {item_id}: {current_quantity}")
         
         # Calculate adjustment needed
         adjustment = target_quantity - current_quantity
         logger.info(f"Adjustment needed to reach target quantity: {adjustment}")
         
+        # Additional debugging for zero adjustments
+        if adjustment == 0:
+            logger.warning(f"Zero adjustment detected for item ID {item_id} with location_id {location_id}. Current and target quantities are both {current_quantity}.")
+            if location_id:
+                logger.info(f"Attempting to fetch more detailed warehouse information for location_id {location_id}")
+                response = self.make_api_request("GET", f"items/{item_id}")
+                data = response.json()
+                warehouse_details = data.get("item", {}).get("warehouse_details", [])
+                logger.info(f"Full warehouse details for item: {warehouse_details}")
+        
+        # Make the adjustment if not zero
+        if adjustment == 0:
+            logger.warning("Skipping inventory adjustment as quantity difference is zero. This would result in a 400 error from Zoho API.")
+            return {"warning": "No adjustment made - current stock already matches target quantity", "current_quantity": current_quantity}
+        
         # Make the adjustment
-        return self.adjust_inventory_by_item_id(item_id, adjustment, reason) 
+        return self.adjust_inventory_by_item_id(item_id, adjustment, reason, location_id) 
