@@ -1,0 +1,318 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+curl --request GET \
+  --url 'https://www.zohoapis.com/inventory/v1/items/YOUR_ITEM_ID?organization_id=YOUR_ORGANIZATION_ID&warehouse_id=YOUR_WAREHOUSE_ID' \
+  --header 'Authorization: Zoho-oauthtoken YOUR_OAUTH_TOKEN' \
+  --header 'Content-Type: application/json'
+
+response 
+
+{
+    "code": 0,
+    "message": "success",
+    "item": {
+        "group_id": "362590000000065003",
+        "group_name": "Folio Phone Booth",
+        "item_id": "362590000000065013",
+        "name": "Folio Phone Booth-Blush-Furniture Set 1",
+        "sku": "SF-1108",
+        "brand": "",
+        "manufacturer": "",
+        "category_id": "",
+        "category_name": "",
+        "image_name": "Folio_Grey_1.jpg",
+        "image_type": "jpg",
+        "status": "active",
+        "source": "user",
+        "is_linked_with_zohocrm": true,
+        "zcrm_product_id": "493068000001720177",
+        "crm_owner_id": "493068000000327001",
+        "unit": "Box",
+        "unit_id": "362590000000048003",
+        "description": "Internal Size:\nHeight: 196cm Width: 100cm Depth: 80cm\nExternal Size:\nHeight: 225cm* Width: 110cm Depth: 90cm\n*Height includes clearance for fan\nWeight:\nTotal Weight: 224kg (Pod+Furniture)\n\nVentilation\nHighly efficient air flow at 78 m³/h refreshing air every two minutes\nSound / Acoustics\nSTC 30dB (±5dB) & RT0.25s (±0.1s) / Daiki Verified\nMaterials\nConstruction: Carbon Composite / Honey Comb Panels ≤0.071kg CO2e\nGlass: Similar To High Speed Trains / ≤0.4MJ\nAdjustable Feet / Coasters: Reduce feet to deploy cosaters to move the Folio Phone Booth\nElectrical / Lighting\n*4000k  (150Lx) Daylight LED\n*Multiple Power Outlets, 220- 24V + USB, USB-C\n*Energy Saving Motion Sensor",
+        "rate": 7349.00,
+        "account_id": "362590000000000376",
+        "account_name": "Sales",
+        "tax_id": "",
+        "tax_name": "",
+        "tax_percentage": 0,
+        "tax_type": "",
+        "tax_status": "",
+        "tax_groups_details": "",
+        "tax_country_code": "",
+        "tax_information": "",
+        "purchase_tax_information": "",
+        "is_default_tax_applied": false,
+        "is_taxable": true,
+        "tax_exemption_id": "",
+        "tax_exemption_code": "",
+        "associated_template_id": "",
+        "documents": [
+            {
+                "can_send_in_mail": false,
+                "file_name": "Folio_Grey_1.jpg",
+                "attachment_order": 1,
+                "source": "desktop",
+                "document_id": "362590000000065037",
+                "file_size": "84140",
+                "source_formatted": "Desktop",
+                "uploaded_by": "Jeni",
+                "file_type": "jpg",
+                "file_size_formatted": "82.2 KB",
+                "uploaded_on": "01/26/2023 02:03 PM",
+                "uploaded_by_id": "362590000000040120",
+                "alter_text": "",
+                "uploaded_on_date_formatted": "01/26/2023"
+            }
+        ],
+        "purchase_description": "",
+        "pricebook_rate": 7349.00,
+        "pricing_scheme": "unit",
+        "price_brackets": [
+        ],
+        "default_price_brackets": [
+            {
+                "start_quantity": 1.000000,
+                "end_quantity": 1.000000,
+                "pricebook_rate": 7349.000000
+            }
+        ],
+        "sales_rate": 7349.00,
+        "purchase_rate": 1088.73,
+        "sales_margin": "",
+        "purchase_account_id": "362590000000000509",
+        "purchase_account_name": "Cost of Goods Sold",
+        "inventory_account_id": "362590000000000511",
+        "inventory_account_name": "Inventory Asset",
+        "created_time": "2023-01-26T14:03:02+0000",
+        "offline_created_date_with_time": "",
+        "last_modified_time": "2025-03-28T07:23:22+0000",
+        "tags": [
+        ],
+        "can_be_sold": true,
+        "can_be_purchased": true,
+        "track_inventory": true,
+        "item_type": "inventory",
+        "product_type": "goods",
+        "inventory_valuation_method": "fifo",
+        "is_returnable": false,
+        "reorder_level": 1.000000,
+        "minimum_order_quantity": "",
+        "maximum_order_quantity": "",
+        "initial_stock": 0.00,
+        "initial_stock_rate": 0.00,
+        "total_initial_stock": 0.00,
+        "vendor_id": "",
+        "vendor_name": "",
+        "stock_on_hand": 50.000000,
+        "asset_value": "",
+        "available_stock": 50.000000,
+        "actual_available_stock": 50.000000,
+        "committed_stock": 0.000000,
+        "actual_committed_stock": 0.000000,
+        "available_for_sale_stock": 50.000000,
+        "actual_available_for_sale_stock": 50.000000,
+        "quantity_in_transit": 0.000000,
+        "include_in_tax_return": true,
+        "custom_fields": [
+        ],
+        "custom_field_hash": {
+        },
+        "is_storage_location_enabled": false,
+        "is_fulfillable": false,
+        "upc": "",
+        "ean": "",
+        "isbn": "",
+        "part_number": "",
+        "is_combo_product": false,
+        "attribute_id1": "362590000000065001",
+        "attribute_id2": "362590000000065478",
+        "attribute_id3": "",
+        "attribute_name1": "Color",
+        "attribute_name2": "Furniture",
+        "attribute_name3": "",
+        "attribute_type1": "Text",
+        "attribute_type2": "",
+        "attribute_type3": "",
+        "attribute_option_id1": "362590000000065023",
+        "attribute_option_id2": "",
+        "attribute_option_id3": "",
+        "attribute_option_name1": "Blush",
+        "attribute_option_name2": "",
+        "attribute_option_name3": "",
+        "attribute_option_data1": "",
+        "attribute_option_data2": "",
+        "attribute_option_data3": "",
+        "image_sync_in_progress": false,
+        "sales_channels": [
+            {
+                "integration_id": "362590000000535013",
+                "channel_product_id": "44031577555164",
+                "product_mapping_id": "362590000000545042",
+                "account_identifier": "office-solutions-com",
+                "name": "shopify",
+                "formatted_name": "Shopify",
+                "status": "active",
+                "channel_name": "Folio Phone Booth - Folio Blush / Furniture Set 1",
+                "channel_sku": "SF-1108"
+            }
+        ],
+        "warehouses": [
+            {
+                "warehouse_id": "362590000000040137",
+                "warehouse_name": "SBS Group Limited",
+                "status": "active",
+                "is_primary": true,
+                "is_item_mapped": true,
+                "warehouse_stock_on_hand": 45.000000,
+                "initial_stock": 0.00,
+                "initial_stock_rate": 0.00,
+                "warehouse_available_stock": 45.000000,
+                "warehouse_actual_available_stock": 45.000000,
+                "warehouse_committed_stock": 0.000000,
+                "warehouse_actual_committed_stock": 0.000000,
+                "warehouse_available_for_sale_stock": 45.000000,
+                "warehouse_actual_available_for_sale_stock": 45.000000,
+                "warehouse_quantity_in_transit": 0.000000,
+                "storages": [
+                ],
+                "is_storage_location_enabled": false,
+                "is_fba_warehouse": false,
+                "sales_channels": [
+                ]
+            },
+            {
+                "warehouse_id": "362590000000040141",
+                "warehouse_name": "Spain Warehouse",
+                "status": "active",
+                "is_primary": false,
+                "is_item_mapped": true,
+                "warehouse_stock_on_hand": 5.000000,
+                "initial_stock": 0.00,
+                "initial_stock_rate": 0.00,
+                "warehouse_available_stock": 5.000000,
+                "warehouse_actual_available_stock": 5.000000,
+                "warehouse_committed_stock": 0.000000,
+                "warehouse_actual_committed_stock": 0.000000,
+                "warehouse_available_for_sale_stock": 5.000000,
+                "warehouse_actual_available_for_sale_stock": 5.000000,
+                "warehouse_quantity_in_transit": 0.000000,
+                "storages": [
+                ],
+                "is_storage_location_enabled": false,
+                "is_fba_warehouse": false,
+                "sales_channels": [
+                ]
+            },
+            {
+                "warehouse_id": "362590000002864010",
+                "warehouse_name": "Final Step Logistics",
+                "status": "active",
+                "is_primary": false,
+                "is_item_mapped": true,
+                "warehouse_stock_on_hand": 0.000000,
+                "initial_stock": 0.00,
+                "initial_stock_rate": 0.00,
+                "warehouse_available_stock": 0.000000,
+                "warehouse_actual_available_stock": 0.000000,
+                "warehouse_committed_stock": 0.000000,
+                "warehouse_actual_committed_stock": 0.000000,
+                "warehouse_available_for_sale_stock": 0.000000,
+                "warehouse_actual_available_for_sale_stock": 0.000000,
+                "warehouse_quantity_in_transit": 0.000000,
+                "storages": [
+                ],
+                "is_storage_location_enabled": true,
+                "is_fba_warehouse": false,
+                "sales_channels": [
+                ]
+            },
+            {
+                "warehouse_id": "362590000002864536",
+                "warehouse_name": "Marone Solutions Ltd",
+                "status": "active",
+                "is_primary": false,
+                "is_item_mapped": true,
+                "warehouse_stock_on_hand": 0.000000,
+                "initial_stock": 0.00,
+                "initial_stock_rate": 0.00,
+                "warehouse_available_stock": 0.000000,
+                "warehouse_actual_available_stock": 0.000000,
+                "warehouse_committed_stock": 0.000000,
+                "warehouse_actual_committed_stock": 0.000000,
+                "warehouse_available_for_sale_stock": 0.000000,
+                "warehouse_actual_available_for_sale_stock": 0.000000,
+                "warehouse_quantity_in_transit": 0.000000,
+                "storages": [
+                ],
+                "is_storage_location_enabled": false,
+                "is_fba_warehouse": false,
+                "sales_channels": [
+                ]
+            },
+            {
+                "warehouse_id": "362590000002869068",
+                "warehouse_name": "Primary Office Furniture Services",
+                "status": "active",
+                "is_primary": false,
+                "is_item_mapped": true,
+                "warehouse_stock_on_hand": 0.000000,
+                "initial_stock": 0.00,
+                "initial_stock_rate": 0.00,
+                "warehouse_available_stock": 0.000000,
+                "warehouse_actual_available_stock": 0.000000,
+                "warehouse_committed_stock": 0.000000,
+                "warehouse_actual_committed_stock": 0.000000,
+                "warehouse_available_for_sale_stock": 0.000000,
+                "warehouse_actual_available_for_sale_stock": 0.000000,
+                "warehouse_quantity_in_transit": 0.000000,
+                "storages": [
+                ],
+                "is_storage_location_enabled": false,
+                "is_fba_warehouse": false,
+                "sales_channels": [
+                ]
+            },
+            {
+                "warehouse_id": "362590000002869594",
+                "warehouse_name": "Valencia",
+                "status": "active",
+                "is_primary": false,
+                "is_item_mapped": true,
+                "warehouse_stock_on_hand": 0.000000,
+                "initial_stock": 0.00,
+                "initial_stock_rate": 0.00,
+                "warehouse_available_stock": 0.000000,
+                "warehouse_actual_available_stock": 0.000000,
+                "warehouse_committed_stock": 0.000000,
+                "warehouse_actual_committed_stock": 0.000000,
+                "warehouse_available_for_sale_stock": 0.000000,
+                "warehouse_actual_available_for_sale_stock": 0.000000,
+                "warehouse_quantity_in_transit": 0.000000,
+                "storages": [
+                ],
+                "is_storage_location_enabled": true,
+                "is_fba_warehouse": false,
+                "sales_channels": [
+                ]
+            }
+        ],
+        "preferred_vendors": [
+        ],
+        "package_details": {
+            "length": "",
+            "width": "",
+            "height": "",
+            "weight": "",
+            "weight_unit": "kg",
+            "dimension_unit": "cm"
+        },
+        "integration_references": [
+        ]
+    }
+}
