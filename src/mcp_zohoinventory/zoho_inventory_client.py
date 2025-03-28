@@ -80,6 +80,54 @@ class ZohoInventoryClient:
         """
         return self._item_client.update_item_stock(name, stock_on_hand)
     
+    def adjust_inventory_by_sku(self, sku: str, quantity: int, reason: str = "Stock update via API") -> Dict[str, Any]:
+        """
+        Adjust inventory quantity for an item by SKU using inventoryadjustments API
+        
+        Args:
+            sku: SKU of the inventory item
+            quantity: Quantity to adjust (positive or negative)
+            reason: Reason for the adjustment
+            
+        Returns:
+            Adjustment details or error message
+        """
+        # First get the item to find its ID
+        item = self.get_item_by_sku(sku)
+        if not item:
+            raise ValueError(f"Item not found with SKU: {sku}")
+        
+        item_id = item.get("item_id")
+        if not item_id:
+            raise ValueError(f"Item ID not found for SKU: {sku}")
+            
+        # Adjust the inventory
+        return self._item_client.adjust_inventory_by_item_id(item_id, quantity, reason)
+    
+    def override_stock_by_sku(self, sku: str, target_quantity: int, reason: str = "Stock override via API") -> Dict[str, Any]:
+        """
+        Override inventory quantity for an item by SKU to an exact value
+        
+        Args:
+            sku: SKU of the inventory item
+            target_quantity: Exact quantity to set
+            reason: Reason for the override
+            
+        Returns:
+            Adjustment details or error message
+        """
+        # First get the item to find its ID
+        item = self.get_item_by_sku(sku)
+        if not item:
+            raise ValueError(f"Item not found with SKU: {sku}")
+        
+        item_id = item.get("item_id")
+        if not item_id:
+            raise ValueError(f"Item ID not found for SKU: {sku}")
+            
+        # Override the inventory
+        return self._item_client.override_item_stock_by_id(item_id, target_quantity, reason)
+    
     # Warehouse-related methods
     
     def get_all_warehouses(self) -> List[Dict[str, Any]]:

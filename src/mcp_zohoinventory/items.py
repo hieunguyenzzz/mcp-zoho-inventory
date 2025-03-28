@@ -114,4 +114,93 @@ class ItemClient(ZohoClient):
             f"items/{item_id}",
             json={"stock_on_hand": stock_on_hand}
         )
-        return response.json().get("item", {}) 
+        return response.json().get("item", {})
+        
+    def adjust_inventory_by_item_id(self, item_id: str, quantity: int, reason: str = "Stock update via API") -> Dict[str, Any]:
+        """
+        Adjust inventory quantity for an item by ID using inventoryadjustments API
+        
+        Args:
+            item_id: ID of the inventory item
+            quantity: Quantity to adjust (positive or negative)
+            reason: Reason for the adjustment
+            
+        Returns:
+            Adjustment details
+        """
+        # Log the operation
+        logger.info(f"Adjusting inventory for item ID: {item_id}, quantity: {quantity}")
+        
+        from datetime import datetime
+        
+        payload = {
+            "adjustment_type": "quantity",
+            "reason": reason,
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "line_items": [
+                {
+                    "item_id": item_id,
+                    "quantity_adjusted": quantity
+                }
+            ]
+        }
+        
+        response = self.make_api_request(
+            "POST",
+            "inventoryadjustments",
+            json=payload
+        )
+        
+        data = response.json()
+        logger.info(f"API response for adjust_inventory_by_item_id: {data}")
+        
+        return data.get("inventoryadjustment", {})
+
+    def get_item_stock_by_id(self, item_id: str) -> int:
+        """
+        Get current stock quantity for an item by ID
+        
+        Args:
+            item_id: ID of the inventory item
+            
+        Returns:
+            Current stock quantity as integer
+        """
+        logger.info(f"Getting stock quantity for item ID: {item_id}")
+        
+        response = self.make_api_request(
+            "GET",
+            f"items/{item_id}"
+        )
+        
+        data = response.json()
+        logger.info(f"API response summary for get_item_stock_by_id: {data.get('code')}")
+        
+        item = data.get("item", {})
+        return int(item.get("available_stock", 0))
+    
+    def override_item_stock_by_id(self, item_id: str, target_quantity: int, reason: str = "Stock override via API") -> Dict[str, Any]:
+        """
+        Override inventory quantity for an item by ID to an exact value
+        
+        Args:
+            item_id: ID of the inventory item
+            target_quantity: Exact quantity to set
+            reason: Reason for the adjustment
+            
+        Returns:
+            Adjustment details
+        """
+        # Log the operation
+        logger.info(f"Overriding stock for item ID: {item_id} to quantity: {target_quantity}")
+        
+        # Get current stock quantity
+        current_quantity = self.get_item_stock_by_id(item_id)
+        logger.info(f"Current stock quantity for item ID {item_id}: {current_quantity}")
+        
+        # Calculate adjustment needed
+        adjustment = target_quantity - current_quantity
+        logger.info(f"Adjustment needed to reach target quantity: {adjustment}")
+        
+        # Make the adjustment
+        return self.adjust_inventory_by_item_id(item_id, adjustment, reason) 

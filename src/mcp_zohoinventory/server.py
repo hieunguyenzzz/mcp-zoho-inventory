@@ -72,20 +72,20 @@ def get_all_warehouses() -> str:
         return {"error": str(e)}
 
 @mcp.tool()
-def update_stock(item_name: str, quantity: int) -> str:
-    """Update the stock quantity for an item"""
+def update_stock_by_sku(sku: str, quantity: int, reason: str = "Stock update via API") -> str:
+    """Update the stock quantity for an item by SKU"""
     from mcp_zohoinventory.zoho_inventory_client import ZohoInventoryClient
     
     try:
         client = ZohoInventoryClient()
-        updated_item = client.update_item_stock(item_name, quantity)
+        adjustment = client.override_stock_by_sku(sku, quantity, reason)
         return {
             "success": True,
-            "message": f"Updated stock for {item_name} to {quantity}",
-            "item": updated_item
+            "message": f"Updated stock for SKU {sku} to {quantity}",
+            "adjustment": adjustment
         }
     except Exception as e:
-        logger.error(f"Error updating item {item_name}: {str(e)}")
+        logger.error(f"Error updating inventory for SKU {sku}: {str(e)}")
         return {
             "success": False,
             "error": str(e)

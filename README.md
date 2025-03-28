@@ -31,6 +31,8 @@ A Model Context Protocol (MCP) server for interacting with Zoho Inventory.
 
 ## OAuth Token Management
 
+
+
 Before using the application, ensure your credentials are correct by checking the authentication process in your application's code.
 
 This application includes automatic token refresh capabilities:
@@ -39,6 +41,10 @@ This application includes automatic token refresh capabilities:
 - The new access token will be used for subsequent requests
 - The environment variable `ZOHO_AUTH_TOKEN` will be updated with the new token value
 - For persistence across sessions, you should manually update your environment settings when prompted
+
+### Required Zoho OAuth Scope 
+
+ZohoInventory.items.ALL,ZohoInventory.warehouses.ALL,ZohoInventory.inventoryadjustments.ALL
 
 ## Usage
 
