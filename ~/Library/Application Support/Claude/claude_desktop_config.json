@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "mcp-zoho-inventory": {
+      "command": "/Users/hieunguyen/.local/bin/uv",
+      "args": [
+        "run",
+        "python",
+        "-c",
+        "from pathlib import Path; import sys; sys.path.insert(0, str(Path('/Users/hieunguyen/projects/python/mcp-zohoinventory/src'))); from mcp_zohoinventory.server import main; main()"
+      ],
+      "env": {
+        "PYTHONPATH": "/Users/hieunguyen/projects/python/mcp-zohoinventory/src"
+      }
+    }
+  }
+} 

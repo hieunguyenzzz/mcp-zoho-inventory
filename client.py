@@ -46,9 +46,9 @@ async def main():
     # Check if we have command-line arguments
     if len(sys.argv) > 1:
         command = sys.argv[1]
-        if command == "read-resource" and len(sys.argv) > 3:
+        if command == "read-resource" and len(sys.argv) > 2:
             resource_type = sys.argv[2]
-            resource_name = sys.argv[3]
+            resource_name = sys.argv[3] if len(sys.argv) > 3 else ""
             
             # Connect to the server and read the specified resource
             async with stdio_client(
@@ -65,11 +65,17 @@ async def main():
                         # URL encode the SKU to handle spaces and special chars
                         encoded_sku = urllib.parse.quote(resource_name)
                         await fetch_and_process_resource(session, f"inventory://sku/{encoded_sku}")
+                    elif resource_type == "warehouses":
+                        # Get all warehouses
+                        await fetch_and_process_resource(session, "inventory://warehouses")
+                    elif resource_type == "all":
+                        # Get all items
+                        await fetch_and_process_resource(session, "inventory://all")
                     else:
                         print(f"Unknown resource type: {resource_type}")
             return
     
-    # Default behavior if no command-line arguments
+    # Default behavior if no command-line arguments - just list available resources
     async with stdio_client(
         StdioServerParameters(command="uv", args=["run", "mcp-zoho"])
     ) as (read, write):
@@ -82,17 +88,6 @@ async def main():
             for resource in resources.resources:
                 print(f"  - {resource.name}: {resource.description}")
                 print(f"    URI: {resource.uri}")
-            print()
-            
-            # Test with a specific SKU
-            print("Testing with SKU SF-1108:")
-            await fetch_and_process_resource(session, "inventory://sku/SF-1108")
-            
-            print("\nGetting all items:")
-            await fetch_and_process_resource(session, "inventory://all/")
-            
-            print("\nGetting all warehouses:")
-            await fetch_and_process_resource(session, "inventory://warehouses")
 
 if __name__ == "__main__":
     asyncio.run(main())
